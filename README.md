@@ -1,4 +1,4 @@
-[⚠️ Suspicious Content] # Hallway-Chat
+# Hallway-Chat
 
 A modern, user-friendly chat platform built with Django and Material Design 3. This project demonstrates how to create a real-time(ish) chat application with user authentication, contact management, chat invites, and a beautiful, responsive interface.
 
