@@ -103,5 +103,3 @@
 | Menu and Navigation         | base.html, material.js                |
 | Cards and Favicon           | Message bubbles, favicon.ico          |
 
-</rewritten_file>
-
