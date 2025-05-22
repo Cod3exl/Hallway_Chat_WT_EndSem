@@ -1,0 +1,32 @@
+<!-- templates/auth/login.html -->
+{% extends 'base.html' %}
+
+{% block title %}Login - Chat Platform{% endblock %}
+
+{% block content %}
+<div class="md-auth-container">
+    <div class="md-auth-card">
+        <h1 class="md-auth-title">Login</h1>
+        
+        <form method="post" class="md-form">
+            {% csrf_token %}
+            
+            <div class="md-form-field">
+                <label for="id_username" class="md-form-label">Username</label>
+                <input type="text" name="username" id="id_username" class="md-form-input" required>
+            </div>
+            
+            <div class="md-form-field">
+                <label for="id_password" class="md-form-label">Password</label>
+                <input type="password" name="password" id="id_password" class="md-form-input" required>
+            </div>
+            
+            <button type="submit" class="md-button md-button-filled md-button-full">Login</button>
+        </form>
+        
+        <div class="md-auth-links">
+            <p>Don't have an account? <a href="{% url 'register' %}">Register</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

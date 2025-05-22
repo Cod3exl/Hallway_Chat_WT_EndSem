@@ -1,0 +1,41 @@
+<!-- templates/home.html -->
+{% extends 'base.html' %}
+
+{% block title %}Welcome to Chat Platform{% endblock %}
+
+{% block content %}
+<section class="md-hero">
+    <div class="md-hero-content">
+        <h1 class="md-hero-title">Connect with friends instantly</h1>
+        <p class="md-hero-subtitle">A simple, clean, and intuitive chatting platform built with Material Design 3.</p>
+        <div class="md-hero-actions">
+            {% if user.is_authenticated %}
+                <a href="{% url 'chat:chat_view' %}" class="md-button md-button-filled">Start Chatting</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="md-button md-button-filled">Login</a>
+                <a href="{% url 'register' %}" class="md-button md-button-outlined">Register</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="md-features">
+    <div class="md-feature">
+        <span class="material-icons md-feature-icon">chat</span>
+        <h2 class="md-feature-title">Simple Messaging</h2>
+        <p class="md-feature-description">Exchange messages with your contacts in real-time.</p>
+    </div>
+    
+    <div class="md-feature">
+        <span class="material-icons md-feature-icon">devices</span>
+        <h2 class="md-feature-title">Responsive Design</h2>
+        <p class="md-feature-description">Chat from any device with our mobile-first design.</p>
+    </div>
+    
+    <div class="md-feature">
+        <span class="material-icons md-feature-icon">security</span>
+        <h2 class="md-feature-title">Secure</h2>
+        <p class="md-feature-description">Your conversations are private and secure.</p>
+    </div>
+</section>
+{% endblock %}

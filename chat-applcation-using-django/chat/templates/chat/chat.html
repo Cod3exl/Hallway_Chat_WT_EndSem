@@ -1,0 +1,286 @@
+<!-- templates/chat/chat.html -->
+{% extends 'base.html' %} {% load static %} {% block title %}Chat - Chat
+Platform{% endblock %} {% block content %}
+<div class="md-chat-container">
+	<!-- Contacts Sidebar -->
+	<div class="md-chat-sidebar">
+		<div class="md-chat-sidebar-header">
+			<h2>Contacts</h2>
+			<button
+				class="md-button md-button-icon"
+				id="add-contact-button"
+				aria-label="Add Contact"
+			>
+				<span class="material-icons">person_add</span>
+			</button>
+		</div>
+
+		<!-- Add Contact Form (Hidden by default) -->
+		<div class="md-add-contact-form" id="add-contact-form">
+			<form method="post" action="{% url 'chat:add_contact' %}">
+				{% csrf_token %}
+				<div class="md-form-field">
+					<label for="username" class="md-form-label">Username</label>
+					<input
+						type="text"
+						name="username"
+						id="username"
+						class="md-form-input"
+						required
+					/>
+				</div>
+				<button type="submit" class="md-button md-button-filled md-button-sm">
+					Add
+				</button>
+			</form>
+		</div>
+
+		<!-- Pending Invites -->
+		{% if pending_invites %}
+		<div class="md-invite-list">
+			<h3>Pending Invites</h3>
+			{% for invite in pending_invites %}
+			<div class="md-invite-item">
+				<span>{{ invite.from_user.username }} wants to chat with you.</span>
+				<form
+					method="post"
+					action="{% url 'chat:accept_invite' invite.id %}"
+					style="display: inline"
+				>
+					{% csrf_token %}
+					<button type="submit" class="md-button md-button-filled md-button-sm">
+						Accept
+					</button>
+				</form>
+				<form
+					method="post"
+					action="{% url 'chat:decline_invite' invite.id %}"
+					style="display: inline"
+				>
+					{% csrf_token %}
+					<button
+						type="submit"
+						class="md-button md-button-outlined md-button-sm"
+					>
+						Decline
+					</button>
+				</form>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Contact List -->
+		<div class="md-contact-list">
+			{% if contacts %} {% for contact in contacts %}
+			<a
+				href="{% url 'chat:chat_with_user' contact.id %}"
+				class="md-contact-item {% if active_chat.id == contact.id %}md-contact-active{% endif %}"
+			>
+				<div class="md-contact-avatar">
+					{% if contact.profile.avatar %}
+					<img
+						src="{{ contact.profile.avatar.url }}"
+						alt="{{ contact.username }}"
+					/>
+					{% else %}
+					<span class="material-icons">account_circle</span>
+					{% endif %}
+				</div>
+				<div class="md-contact-info">
+					<h3 class="md-contact-name">{{ contact.username }}</h3>
+					<p class="md-contact-status">
+						{% if contact.profile.status %} {{ contact.profile.status }} {% else
+						%} Available {% endif %}
+					</p>
+				</div>
+			</a>
+			{% endfor %} {% else %}
+			<div class="md-empty-state">
+				<span class="material-icons">people</span>
+				<p>No contacts yet</p>
+				<p>Add contacts to start chatting</p>
+			</div>
+			{% endif %}
+		</div>
+	</div>
+
+	<!-- Chat Area -->
+	<div class="md-chat-area">
+		{% if active_chat %}
+		<div class="md-chat-header">
+			<div class="md-chat-user">
+				{% if active_chat.profile.avatar %}
+				<img
+					src="{{ active_chat.profile.avatar.url }}"
+					alt="{{ active_chat.username }}"
+					class="md-chat-avatar"
+				/>
+				{% else %}
+				<span class="material-icons md-chat-avatar-icon">account_circle</span>
+				{% endif %}
+				<h2 class="md-chat-username">{{ active_chat.username }}</h2>
+			</div>
+		</div>
+
+		<div class="md-messages-container" id="messages-container">
+			{% if messages %} {% for message in messages %}
+			<div
+				class="md-message-card {% if message.sender == request.user %}md-message-sent{% else %}md-message-received{% endif %}"
+			>
+				<div class="md-message-content">{{ message.content }}</div>
+				<div class="md-message-time">{{ message.timestamp|time:"H:i" }}</div>
+			</div>
+			{% endfor %} {% else %}
+			<div class="md-empty-state">
+				<span class="material-icons">chat</span>
+				<p>No messages yet</p>
+				<p>Start the conversation</p>
+			</div>
+			{% endif %}
+		</div>
+
+		<div class="md-message-form">
+			<form id="message-form" data-user-id="{{ active_chat.id }}">
+				{% csrf_token %}
+				<div class="md-form-field md-form-field-with-button">
+					<input
+						type="text"
+						id="message-input"
+						class="md-form-input"
+						placeholder="Type a message..."
+						required
+					/>
+					<button
+						type="submit"
+						class="md-button md-button-icon"
+						aria-label="Send"
+					>
+						<span class="material-icons">send</span>
+					</button>
+				</div>
+			</form>
+		</div>
+		{% else %}
+		<div class="md-empty-state md-empty-state-large">
+			<span class="material-icons">chat_bubble_outline</span>
+			<h2>Select a contact to start chatting</h2>
+			<p>Or add a new contact using the + button</p>
+		</div>
+		{% endif %}
+	</div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+	document.addEventListener("DOMContentLoaded", function () {
+		// Add contact form toggle
+		const addContactButton = document.getElementById("add-contact-button");
+		const addContactForm = document.getElementById("add-contact-form");
+
+		if (addContactButton && addContactForm) {
+			addContactButton.addEventListener("click", function () {
+				addContactForm.classList.toggle("md-add-contact-form-visible");
+			});
+		}
+
+		// Message sending functionality
+		const messageForm = document.getElementById("message-form");
+		const messagesContainer = document.getElementById("messages-container");
+		const messageInput = document.getElementById("message-input");
+
+		if (messageForm && messagesContainer && messageInput) {
+			messageForm.addEventListener("submit", function (e) {
+				e.preventDefault();
+
+				const userId = this.getAttribute("data-user-id");
+				const content = messageInput.value.trim();
+
+				if (content) {
+					const csrfToken = document.querySelector(
+						"[name=csrfmiddlewaretoken]"
+					).value;
+
+					fetch(`/chat/send/${userId}/`, {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/x-www-form-urlencoded",
+							"X-Requested-With": "XMLHttpRequest",
+							"X-CSRFToken": csrfToken,
+						},
+						body: `content=${encodeURIComponent(content)}`,
+					})
+						.then((response) => response.json())
+						.then((data) => {
+							if (data.status === "success") {
+								// Create message element
+								const messageCard = document.createElement("div");
+								messageCard.className = "md-message-card md-message-sent";
+
+								const messageContent = document.createElement("div");
+								messageContent.className = "md-message-content";
+								messageContent.textContent = data.message.content;
+
+								const messageTime = document.createElement("div");
+								messageTime.className = "md-message-time";
+								messageTime.textContent = data.message.timestamp;
+
+								messageCard.appendChild(messageContent);
+								messageCard.appendChild(messageTime);
+
+								// Add to messages container
+								messagesContainer.appendChild(messageCard);
+
+								// Clear input
+								messageInput.value = "";
+
+								// Scroll to bottom
+								messagesContainer.scrollTop = messagesContainer.scrollHeight;
+							}
+						})
+						.catch((error) => {
+							console.error("Error:", error);
+						});
+				}
+			});
+
+			// Scroll to bottom of messages container
+			if (messagesContainer.children.length > 0) {
+				messagesContainer.scrollTop = messagesContainer.scrollHeight;
+			}
+		}
+
+		// AJAX Polling for new messages
+		if (messagesContainer && messageForm) {
+			const userId = messageForm.getAttribute("data-user-id");
+			let lastMessageCount = messagesContainer.children.length;
+			function fetchMessages() {
+				fetch(`/chat/get-messages/${userId}/`)
+					.then((response) => response.json())
+					.then((data) => {
+						if (data.messages.length !== lastMessageCount) {
+							messagesContainer.innerHTML = "";
+							data.messages.forEach((msg) => {
+								const messageCard = document.createElement("div");
+								messageCard.className =
+									"md-message-card " +
+									(msg.is_sender ? "md-message-sent" : "md-message-received");
+								const messageContent = document.createElement("div");
+								messageContent.className = "md-message-content";
+								messageContent.textContent = msg.content;
+								const messageTime = document.createElement("div");
+								messageTime.className = "md-message-time";
+								messageTime.textContent = msg.timestamp;
+								messageCard.appendChild(messageContent);
+								messageCard.appendChild(messageTime);
+								messagesContainer.appendChild(messageCard);
+							});
+							messagesContainer.scrollTop = messagesContainer.scrollHeight;
+							lastMessageCount = data.messages.length;
+						}
+					});
+			}
+			setInterval(fetchMessages, 2000);
+		}
+	});
+</script>
+{% endblock %}
